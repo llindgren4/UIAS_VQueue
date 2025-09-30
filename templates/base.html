@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <title>{% block title %}Event Queue App{% endblock %}</title>
+</head>
+<body>
+    <header>
+        <h1>Event Queue Management</h1>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('join') }}">Join Queue</a></li>
+                <li><a href="{{ url_for('admin') }}">Admin Panel</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <p>&copy; 2023 Event Queue Management</p>
+    </footer>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

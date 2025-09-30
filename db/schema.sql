@@ -1,0 +1,7 @@
+CREATE TABLE queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    group_size INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'waiting',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

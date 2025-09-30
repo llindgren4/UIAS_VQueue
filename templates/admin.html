@@ -1,0 +1,184 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Admin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; vertical-align: top; }
+    form.inline { display: inline; margin-right: 6px; }
+    .container { max-width: 960px; margin: 0 auto; padding: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Dashboard</h1>
+
+    <section>
+      <h2>Occupancy</h2>
+      <p>Currently inside: <strong id="occupancy">{{ occupancy }}</strong></p>
+
+      <form class="inline ajax" method="post" action="{{ url_for('admin_occupancy') }}">
+        <input type="hidden" name="op" value="inc">
+        <input type="number" name="delta" value="1" min="1" step="1">
+        <button type="submit">+ Add</button>
+      </form>
+
+      <form class="inline ajax" method="post" action="{{ url_for('admin_occupancy') }}">
+        <input type="hidden" name="op" value="dec">
+        <input type="number" name="delta" value="1" min="1" step="1">
+        <button type="submit">- Remove</button>
+      </form>
+
+      <form class="inline ajax" method="post" action="{{ url_for('admin_occupancy') }}">
+        <input type="hidden" name="op" value="set">
+        <input type="number" name="value" value="{{ occupancy }}" min="0" step="1">
+        <button type="submit">Set Exact</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>
+        Waiting Queue (<span id="waiting-count">{{ waiting|length }}</span> groups,
+        <span id="waiting-people">{{ total_waiting_people }}</span> people)
+      </h2>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Group Size</th><th>Joined</th><th>Action</th></tr>
+        </thead>
+        <tbody id="waiting-body">
+        {% for g in waiting %}
+          <tr>
+            <td>{{ g.name }}</td>
+            <td>{{ g.group_size }}</td>
+            <td>{{ g.created_at }}</td>
+            <td>
+              <form class="inline ajax" method="post" action="{{ url_for('call_group', group_id=g.id) }}">
+                <button type="submit">Call Up</button>
+              </form>
+              <form class="inline ajax" method="post" action="{{ url_for('let_in_group', group_id=g.id) }}">
+                <button type="submit">Let In (+{{ g.group_size }})</button>
+              </form>
+              <form class="inline ajax" method="post" action="{{ url_for('remove_group', group_id=g.id) }}">
+                <button type="submit">Remove</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4">No one waiting.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Called Up</h2>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>Group Size</th><th>Called</th><th>Action</th></tr>
+        </thead>
+        <tbody id="active-body">
+        {% for g in active or [] %}
+          <tr>
+            <td>{{ g.name }}</td>
+            <td>{{ g.group_size }}</td>
+            <td>{{ g.created_at }}</td>
+            <td>
+              <form class="inline ajax" method="post" action="{{ url_for('let_in_group', group_id=g.id) }}">
+                <button type="submit">Let In (+{{ g.group_size }})</button>
+              </form>
+              <form class="inline ajax" method="post" action="{{ url_for('remove_group', group_id=g.id) }}">
+                <button type="submit">Remove</button>
+              </form>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4">No one called up.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>Danger Zone</h2>
+      <form class="ajax" method="post" action="{{ url_for('reset_queue') }}">
+        <button type="submit">Clear Waiting Queue</button>
+      </form>
+    </section>
+  </div>
+
+  <script>
+    async function refreshAdmin() {
+      try {
+        const res = await fetch("{{ url_for('admin_data') }}", { cache: 'no-store' });
+        const data = await res.json();
+        document.getElementById('occupancy').textContent = data.occupancy;
+        document.getElementById('waiting-count').textContent = data.total_waiting_groups;
+        document.getElementById('waiting-people').textContent = data.total_waiting_people;
+
+        const esc = (s) => String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;");
+
+        const wtbody = document.getElementById('waiting-body');
+        if (!data.waiting.length) {
+          wtbody.innerHTML = '<tr><td colspan="4">No one waiting.</td></tr>';
+        } else {
+          wtbody.innerHTML = data.waiting.map(g => `
+            <tr>
+              <td>${esc(g.name)}</td>
+              <td>${g.group_size}</td>
+              <td>${esc(g.created_at)}</td>
+              <td>
+                <form class="inline ajax" method="post" action="/admin/call/${g.id}">
+                  <button type="submit">Call Up</button>
+                </form>
+                <form class="inline ajax" method="post" action="/admin/letin/${g.id}">
+                  <button type="submit">Let In (+${g.group_size})</button>
+                </form>
+                <form class="inline ajax" method="post" action="/admin/remove/${g.id}">
+                  <button type="submit">Remove</button>
+                </form>
+              </td>
+            </tr>`).join('');
+        }
+
+        const atbody = document.getElementById('active-body');
+        if (!data.active.length) {
+          atbody.innerHTML = '<tr><td colspan="4">No one called up.</td></tr>';
+        } else {
+          atbody.innerHTML = data.active.map(g => `
+            <tr>
+              <td>${esc(g.name)}</td>
+              <td>${g.group_size}</td>
+              <td>${esc(g.created_at)}</td>
+              <td>
+                <form class="inline ajax" method="post" action="/admin/letin/${g.id}">
+                  <button type="submit">Let In (+${g.group_size})</button>
+                </form>
+                <form class="inline ajax" method="post" action="/admin/remove/${g.id}">
+                  <button type="submit">Remove</button>
+                </form>
+              </td>
+            </tr>`).join('');
+        }
+      } catch (e) { console.error(e); }
+    }
+
+    document.addEventListener('submit', async (e) => {
+      const form = e.target.closest('form');
+      if (!form || !form.classList.contains('ajax')) return;
+      e.preventDefault();
+      const url = form.getAttribute('action');
+      const method = (form.getAttribute('method') || 'POST');
+      const body = new FormData(form);
+      if (e.submitter && e.submitter.name) body.append(e.submitter.name, e.submitter.value);
+      await fetch(url, { method, body });
+      await refreshAdmin();
+    });
+
+    setInterval(refreshAdmin, 2000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshAdmin(); });
+    refreshAdmin();
+  </script>
+</body>
+</html>

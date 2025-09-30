@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Status</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>Your Queue Status</h1>
+
+    <div id="notfound" style="display:none;">
+      <p>Ticket not found.</p>
+      <a href="{{ url_for('join') }}">Join the queue</a>
+    </div>
+
+    <div id="waiting" style="display:none;">
+      <p>Group size: <strong id="gsize">—</strong></p>
+      <p>Your position: <strong id="position">—</strong> (<span id="ahead">—</span> ahead)</p>
+      <p>Estimated wait: ~<strong id="eta">—</strong> minutes</p>
+      <p>Currently inside: <strong id="occupancy">—</strong></p>
+    </div>
+
+    <div id="ready" style="display:none;">
+      <h2 id="readyTitle">You're up!</h2>
+      <p id="readyMsg">Please proceed to the entrance.</p>
+      <p>Currently inside: <strong id="occupancy_done">—</strong></p>
+    </div>
+
+    <p><a href="{{ url_for('join') }}">Back to Join</a></p>
+  </div>
+
+  <script>
+    const token = "{{ token }}";
+    async function refreshStatus() {
+      try {
+        const res = await fetch(`/t/${encodeURIComponent(token)}/data`, { cache: 'no-store' });
+        const data = await res.json();
+        const nf = document.getElementById('notfound');
+        const w = document.getElementById('waiting');
+        const r = document.getElementById('ready');
+
+        if (!data.ok && data.not_found) {
+          nf.style.display = ''; w.style.display = 'none'; r.style.display = 'none';
+          return;
+        }
+
+        if (data.status === 'waiting') {
+          nf.style.display = 'none'; w.style.display = ''; r.style.display = 'none';
+          document.getElementById('gsize').textContent = data.group_size;
+          document.getElementById('position').textContent = data.position;
+          document.getElementById('ahead').textContent = data.ahead;
+          document.getElementById('eta').textContent = data.eta_minutes;
+          document.getElementById('occupancy').textContent = data.occupancy;
+        } else {
+          nf.style.display = 'none'; w.style.display = 'none'; r.style.display = '';
+          document.getElementById('occupancy_done').textContent = data.occupancy;
+
+          // customize message based on status
+          const title = document.getElementById('readyTitle');
+          const msg = document.getElementById('readyMsg');
+          if (data.status === 'active') {
+            title.textContent = "You're up!";
+            msg.textContent = "Please proceed to the entrance.";
+          } else if (data.status === 'done') {
+            title.textContent = "You're in!";
+            msg.textContent = "Enjoy the event.";
+          } else if (data.status === 'cancelled') {
+            title.textContent = "Removed from queue";
+            msg.textContent = "If this was a mistake, please re-join.";
+          } else {
+            title.textContent = "Status updated";
+            msg.textContent = "";
+          }
+        }
+      } catch (e) { console.error(e); }
+    }
+    setInterval(refreshStatus, 2000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refreshStatus(); });
+    refreshStatus();
+  </script>
+</body>
+</html>
