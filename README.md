@@ -1,4 +1,6 @@
-# Event Queue Application
+# UIAS Virtual Queue
+
+Initally made for use during UIAS open houses.
 
 This web application allows attendees to scan a QR code to enter their group size, informs them of their turn, and provides an admin interface to manage entry and track the number of attendees at an event.
 
@@ -59,7 +61,7 @@ event-queue-app
    python app.py
    ```
 
-5. Access the application in your web browser at `http://127.0.0.1:5000`.
+5. Locally access application in your browser using `http://127.0.0.1:5000`.
 
 ## Usage
 
