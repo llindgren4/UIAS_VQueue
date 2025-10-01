@@ -1,4 +1,6 @@
-# Event Queue Application
+# UIAS Virtual Queue
+
+Initally made for use during UIAS open houses.
 
 This web application allows attendees to scan a QR code to enter their group size, informs them of their turn, and provides an admin interface to manage entry and track the number of attendees at an event.
 
