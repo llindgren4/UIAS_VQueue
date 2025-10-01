@@ -11,9 +11,7 @@ _db_initialized = False
 
 # --- Admin auth (optional via ADMIN_PASSWORD) ---
 def _admin_protected():
-    expected = os.getenv("ADMIN_PASSWORD")
-    if not expected:
-        return True
+    expected = os.getenv("ADMIN_PASSWORD") or "password"
     auth = request.authorization
     return auth and auth.username == "admin" and auth.password == expected
 
