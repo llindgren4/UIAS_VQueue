@@ -61,7 +61,7 @@ event-queue-app
    python app.py
    ```
 
-5. Access the application in your web browser at `http://127.0.0.1:5000`.
+5. Locally access application in your browser using `http://127.0.0.1:5000`.
 
 ## Usage
 
